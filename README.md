@@ -1,3 +1,32 @@
+# Compass & Digital Level App
+## Introduction
+
+This app demonstrates a compass and a digital level using Android sensors:
+
+### Compass:
+
+- Uses the magnetometer and accelerometer to calculate the heading.
+
+- Displays a rotating compass needle with cardinal directions and minor/major markers on a circular Canvas.
+
+### Digital Level:
+
+- Uses the gyroscope (fused with accelerometer data) to measure pitch and roll.
+
+- Shows a visual level with numerical angles and an indicator for whether the device is LEVEL or TILTED.
+
+- The app applies sensor fusion using a complementary filter to combine gyroscope and accelerometer data for smoother and more accurate pitch and roll readings.
+
+## Features 
+
+- Real-time compass heading with needle rotation.
+
+- Digital level for pitch and roll.
+
+- Level indicator that changes color and status based on orientation.
+
+- Major and minor markers on compass for readability.
+
 ## Reference 
 - Compass Degree Markers: Used AI to design the logic for drawing compass degree markers around the circle, including differentiating between major markers (every 30°) and minor markers (every 10°).
 
