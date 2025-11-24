@@ -1,8 +1,8 @@
 # Compass & Digital Level App
 ## Introduction
 
-This app demonstrates a compass and a digital level using Android sensors:
-
+This app demonstrates a compass and a digital level using Android sensors.
+--- 
 ### Compass:
 
 - Uses the magnetometer and accelerometer to calculate the heading.
@@ -26,7 +26,17 @@ This app demonstrates a compass and a digital level using Android sensors:
 - Level indicator that changes color and status based on orientation.
 
 - Major and minor markers on compass for readability.
+--- 
+## How to Run
+1. Clone this repository:
+   ```
+   git clone https://github.com/shanji361/CompassApp.git
+   ```
+2. Open the project in Android Studio.
 
+3. Run the app on an emulator or a physical Android device.
+   
+--- 
 ## Reference 
 - Compass Degree Markers: Used AI to design the logic for drawing compass degree markers around the circle, including differentiating between major markers (every 30°) and minor markers (every 10°).
 - Cardinal Direction Mapping: Used AI to create the function that converts the azimuth (0–360° heading) into human-readable compass directions like N, NE, E, etc., based on specific degree ranges.
