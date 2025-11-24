@@ -185,9 +185,14 @@ fun CompassAndLevelScreen(
     pitch: Float,
     roll: Float
 ) {
+    val isLevel = pitch in -2f..2f && roll in -2f..2f
+    val backgroundColor = if (isLevel) Color(0xFF4CAF50) else Color(0xFFFF6363)
+
+
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(backgroundColor)
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -222,7 +227,7 @@ fun CompassView(azimuth: Float) {
             text = getDirection(azimuth),
             fontSize = 48.sp,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFF6C63FF)
+            color = Color(0xFF63B6FF)
         )
 
         Text(
@@ -256,14 +261,14 @@ fun CompassCircle(rotation: Float) {
 
         drawCircle(
             brush = Brush.radialGradient(
-                colors = listOf(Color(0xFF1A1F3A), Color(0xFF0A0E27))
+                colors = listOf(Color(0xFF1A1F3A), Color(0xFF0A2327))
             ),
             radius = radius,
             center = center
         )
 
         drawCircle(
-            color = Color(0xFF6C63FF),
+            color = Color(0xFF63B6FF),
             radius = radius,
             center = center,
             style = Stroke(width = 4f)
@@ -343,7 +348,7 @@ fun CompassNeedle() {
 
         drawCircle(
             brush = Brush.radialGradient(
-                colors = listOf(Color(0xFF6C63FF), Color(0xFF4A42CC))
+                colors = listOf(Color(0xFF63AEFF), Color(0xFF42CCAC))
             ),
             radius = 20f,
             center = center
@@ -385,7 +390,7 @@ fun LevelIndicator(label: String, angle: Float, isHorizontal: Boolean) {
             text = label,
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFF6C63FF)
+            color = Color(0xFFFAFF63)
         )
 
         Text(
@@ -448,8 +453,8 @@ fun LevelIndicator(label: String, angle: Float, isHorizontal: Boolean) {
                     .background(
                         brush = Brush.radialGradient(
                             colors = listOf(
-                                Color(0xFF6C63FF),
-                                Color(0xFF4A42CC)
+                                Color(0xFF63FFDB),
+                                Color(0xFF42C0CC)
                             )
                         )
                     )
@@ -472,11 +477,7 @@ fun LevelStatus(pitch: Float, roll: Float) {
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = if (isLevel) "✓" else "✗",
-                fontSize = 48.sp,
-                color = Color.White
-            )
+
             Text(
                 text = if (isLevel) "LEVEL" else "TILTED",
                 fontSize = 16.sp,
