@@ -42,12 +42,19 @@ class MainActivity : ComponentActivity(), SensorEventListener {
 
     private val accelerometerReading = FloatArray(3)
     private val magnetometerReading = FloatArray(3)
+    private val gyroscopeReading = FloatArray(3)
     private val rotationMatrix = FloatArray(9)
     private val orientationAngles = FloatArray(3)
 
     private var azimuth by mutableStateOf(0f)
     private var pitch by mutableStateOf(0f)
     private var roll by mutableStateOf(0f)
+
+    // Sensor fusion variables
+    private var fusedPitch = 0f
+    private var fusedRoll = 0f
+    private var lastTimestamp = 0L
+    private val alpha = 0.98f // Complementary filter coefficient (0.96-0.98 works well)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -83,13 +90,14 @@ class MainActivity : ComponentActivity(), SensorEventListener {
             sensorManager.registerListener(this, acc, SensorManager.SENSOR_DELAY_UI)
         }
         gyroscope?.also { gyro ->
-            sensorManager.registerListener(this, gyro, SensorManager.SENSOR_DELAY_UI)
+            sensorManager.registerListener(this, gyro, SensorManager.SENSOR_DELAY_GAME)
         }
     }
 
     override fun onPause() {
         super.onPause()
         sensorManager.unregisterListener(this)
+        lastTimestamp = 0L
     }
 
     override fun onSensorChanged(event: SensorEvent?) {
@@ -98,32 +106,62 @@ class MainActivity : ComponentActivity(), SensorEventListener {
         when (event.sensor.type) {
             Sensor.TYPE_ACCELEROMETER -> {
                 System.arraycopy(event.values, 0, accelerometerReading, 0, accelerometerReading.size)
-                updatePitchAndRollFromAccelerometer()
             }
             Sensor.TYPE_MAGNETIC_FIELD -> {
                 System.arraycopy(event.values, 0, magnetometerReading, 0, magnetometerReading.size)
             }
-
+            Sensor.TYPE_GYROSCOPE -> {
+                System.arraycopy(event.values, 0, gyroscopeReading, 0, gyroscopeReading.size)
+                fusePitchAndRoll(event.timestamp)
+            }
         }
 
         updateOrientationAngles()
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
-    private fun updatePitchAndRollFromAccelerometer() {
+
+    private fun fusePitchAndRoll(timestamp: Long) {
+        // Calculate time delta in seconds
+        val dt = if (lastTimestamp != 0L) {
+            (timestamp - lastTimestamp) * 1e-9f
+        } else {
+            0f
+        }
+        lastTimestamp = timestamp
+
+        if (dt == 0f || dt > 1f) return // Skip first iteration or if dt is too large
+
+        // Calculate pitch and roll from accelerometer
         val accX = accelerometerReading[0]
         val accY = accelerometerReading[1]
         val accZ = accelerometerReading[2]
 
-        // Pitch, forward/back tilt
-        pitch = Math.toDegrees(
+        val accelPitch = Math.toDegrees(
             atan2(-accX.toDouble(), Math.sqrt((accY * accY + accZ * accZ).toDouble()))
         ).toFloat()
 
-        // Roll, left/right tilt
-        roll = Math.toDegrees(
+        val accelRoll = Math.toDegrees(
             atan2(accY.toDouble(), accZ.toDouble())
         ).toFloat()
+
+        // Get gyroscope angular velocities (in rad/s)
+        val gyroX = gyroscopeReading[0]
+        val gyroY = gyroscopeReading[1]
+
+        // Integrate gyroscope data to get angle changes
+        val gyroPitchDelta = Math.toDegrees(gyroX.toDouble()).toFloat() * dt
+        val gyroRollDelta = Math.toDegrees(gyroY.toDouble()).toFloat() * dt
+
+        // Complementary filter: combine gyroscope and accelerometer data
+        // High-pass filter on gyroscope (tracks fast changes)
+        // Low-pass filter on accelerometer (provides long-term stability)
+        fusedPitch = alpha * (fusedPitch + gyroPitchDelta) + (1 - alpha) * accelPitch
+        fusedRoll = alpha * (fusedRoll + gyroRollDelta) + (1 - alpha) * accelRoll
+
+        // Update the state
+        pitch = fusedPitch
+        roll = fusedRoll
     }
 
     private fun updateOrientationAngles() {
@@ -159,8 +197,6 @@ fun CompassAndLevelScreen(
 
         // Compass Section
         CompassView(azimuth = azimuth)
-
-
 
         // Level Section
         DigitalLevelView(pitch = pitch, roll = roll)
@@ -218,7 +254,6 @@ fun CompassCircle(rotation: Float) {
         val center = Offset(size.width / 2f, size.height / 2f)
         val radius = size.minDimension / 2f
 
-
         drawCircle(
             brush = Brush.radialGradient(
                 colors = listOf(Color(0xFF1A1F3A), Color(0xFF0A0E27))
@@ -259,7 +294,6 @@ fun CompassCircle(rotation: Float) {
                 }
             }
         }
-
 
         for (i in 0 until 360 step 10) {
             rotate(i.toFloat(), center) {
@@ -306,7 +340,6 @@ fun CompassNeedle() {
             path = pathSouth,
             color = Color.White
         )
-
 
         drawCircle(
             brush = Brush.radialGradient(
@@ -376,7 +409,6 @@ fun LevelIndicator(label: String, angle: Float, isHorizontal: Boolean) {
                 val barWidth = if (isHorizontal) size.width * 0.8f else size.width * 0.3f
                 val barHeight = if (isHorizontal) size.height * 0.3f else size.height * 0.8f
 
-
                 drawRoundRect(
                     color = Color(0xFF2A2F4A),
                     topLeft = Offset(
@@ -386,7 +418,6 @@ fun LevelIndicator(label: String, angle: Float, isHorizontal: Boolean) {
                     size = androidx.compose.ui.geometry.Size(barWidth, barHeight),
                     cornerRadius = androidx.compose.ui.geometry.CornerRadius(8f, 8f)
                 )
-
 
                 if (isHorizontal) {
                     drawLine(
@@ -404,7 +435,6 @@ fun LevelIndicator(label: String, angle: Float, isHorizontal: Boolean) {
                     )
                 }
             }
-
 
             val offset = (clampedAngle / 45f) * 100f
             Box(
